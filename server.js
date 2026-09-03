@@ -21,21 +21,38 @@ const systemPrompt = fs.readFileSync('./systemPrompt.txt', 'utf-8');
 const conversas = {};
 
 function gerenciarHistorico(whatsappId, novaMensagem, tipoUsuario) {
-    if (!conversas[whatsappId]) {
-        conversas[whatsappId] = [];
+    const agora = Date.now();
+    
+    // 72 horas convertidas em milissegundos = 259.200.000
+    const TEMPO_TRAVA_72H = 259200000;
+
+    // Se o cliente já existia, mas a última mensagem dele foi há mais de 72 horas
+    if (conversas[whatsappId] && (agora - conversas[whatsappId].ultimaInteracao > TEMPO_TRAVA_72H)) {
+        // Apaga o histórico antigo para ele reiniciar e mandar a saudação de novo no próximo contato
+        delete conversas[whatsappId];
     }
 
-    conversas[whatsappId].push({
-        role: tipoUsuario, // 'user' para o cliente, 'assistant' para o robô Marina
+    if (!conversas[whatsappId]) {
+        conversas[whatsappId] = {
+            mensagens: [],
+            ultimaInteracao: agora
+        };
+    }
+
+    // Atualiza o horário da última mensagem enviada ou recebida
+    conversas[whatsappId].ultimaInteracao = agora;
+
+    conversas[whatsappId].mensagens.push({
+        role: tipoUsuario, // 'user' para o cliente, 'assistant' para a robô Lucy
         content: novaMensagem
     });
 
     // Mantém apenas as últimas 15 mensagens para a conversa não ficar pesada demais
-    if (conversas[whatsappId].length > 15) {
-        conversas[whatsappId].shift();
+    if (conversas[whatsappId].mensagens.length > 15) {
+        conversas[whatsappId].mensagens.shift();
     }
 
-    return conversas[whatsappId];
+    return conversas[whatsappId].mensagens;
 }
 
 // O Webhook: a porta de entrada onde a Evolution API vai avisar que chegou mensagem
@@ -55,7 +72,7 @@ app.post('/webhook', async (req, res) => {
 
         if (!textoCliente) return res.sendStatus(200);
 
-        // 1. Guarda o que o cliente digitou na memória da conversa
+        // 1. Guarda o que o cliente digitou na memória da conversa e gerencia o tempo
         const historicoAtualizado = gerenciarHistorico(whatsappId, textoCliente, 'user');
 
         // 2. Envia o histórico + o manual da pousada para o Claude responder
@@ -66,12 +83,12 @@ app.post('/webhook', async (req, res) => {
             messages: historicoAtualizado,
         });
 
-        const respostaBot = msgClaude.content[0].text;
+        const respostaBot = msgClaude.content.text;
 
-        // 3. Guarda a resposta da Marina na memória da conversa para ela lembrar depois
+        // 3. Guarda a resposta da Lucy na memória da conversa para ela lembrar depois
         gerenciarHistorico(whatsappId, respostaBot, 'assistant');
 
-        // 4. Envia o texto da Marina de volta para o WhatsApp do cliente
+        // 4. Envia o texto da Lucy de volta para o WhatsApp do cliente
         await enviarMensagemWhatsapp(whatsappId, respostaBot);
 
         res.sendStatus(200);
@@ -112,4 +129,5 @@ async function enviarMensagemWhatsapp(whatsappId, texto) {
 
 // Inicia o servidor na porta que a Railway escolher
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`🤖 Atendente virtual Marina online na porta ${PORT}`));
+app.listen(PORT, () => console.log(`🤖 Atendente virtual Lucy online na porta ${PORT}`));
+
