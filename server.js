@@ -122,12 +122,13 @@ async function enviarMensagemWhatsapp(whatsappId, texto) {
             },
             body: JSON.stringify(payload)
         });
-    } catch (err) {
+       } catch (err) {
         console.error("Falha ao enviar mensagem de volta ao WhatsApp:", err);
     }
 }
 
-// Inicia o servidor na porta que a Railway escolher
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`🤖 Atendente virtual Lucy online na porta ${PORT}`));
-
+// Força o servidor a escutar na porta 8080 padrão da Railway
+const PORT = 8080;
+app.listen(PORT, "0.0.0.0", () => {
+    console.log(`🤖 Atendente virtual Marina online na porta ${PORT}`);
+});
