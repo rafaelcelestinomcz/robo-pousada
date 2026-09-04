@@ -43,7 +43,7 @@ app.post('/webhook', async (req, res) => {
         const historicoAtualizado = gerenciarHistorico(whatsappId, textoCliente, 'user');
 
         const msgClaude = await anthropic.messages.create({
-            model: "claude-3-5-sonnet-20240620",
+            model: "claude-sonnet-5",
             max_tokens: 1024,
             system: systemPrompt,
             messages: historicoAtualizado,
@@ -86,7 +86,7 @@ async function enviarMensagemWhatsapp(whatsappId, texto) {
     }
 }
 
-const PORT = 8080;
+const PORT = process.env.PORT || 8080;
 app.listen(PORT, "0.0.0.0", () => {
     console.log(`🤖 Atendente virtual Marina online na porta ${PORT}`);
 });
