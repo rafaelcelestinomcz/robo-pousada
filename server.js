@@ -49,7 +49,12 @@ app.post('/webhook', async (req, res) => {
             messages: historicoAtualizado,
         });
 
-        const respostaBot = msgClaude.content[0].text;
+        const blocoTexto = msgClaude.content.find(bloco => bloco.type === 'text');
+        const respostaBot = blocoTexto?.text;
+        if (!respostaBot) {
+            console.error('Resposta do Claude sem bloco de texto:', JSON.stringify(msgClaude.content));
+            return res.sendStatus(200);
+        }
         gerenciarHistorico(whatsappId, respostaBot, 'assistant');
         await enviarMensagemWhatsapp(whatsappId, respostaBot);
         res.sendStatus(200);
