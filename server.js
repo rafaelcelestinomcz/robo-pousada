@@ -73,14 +73,18 @@ async function enviarMensagemWhatsapp(whatsappId, texto) {
     };
 
     try {
-        await fetch(url, {
+        const resposta = await fetch(url, {
             method: 'POST',
-            headers: { 
+            headers: {
                 'Content-Type': 'application/json',
                 'apikey': process.env.AUTHENTICATION_API_KEY || ''
             },
             body: JSON.stringify(payload)
         });
+        if (!resposta.ok) {
+            const corpoErro = await resposta.text();
+            console.error(`Evolution API recusou o envio (status ${resposta.status}):`, corpoErro);
+        }
     } catch (err) {
         console.error("Falha ao enviar mensagem de volta ao WhatsApp:", err);
     }
